@@ -1,7 +1,7 @@
 const express = require('express')
 const cors = require('cors')
 require('dotenv').config()
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express()
 const port = process.env.PORT || 5000
 app.use(cors())
@@ -18,7 +18,29 @@ async function run() {
     try {
         await client.connect();
         const taskCollection = client.db('toDoApp').collection('tasks')
-
+        app.post('/add-task', async (req, res) => {
+            res.send(await taskCollection.insertOne(req.body))
+        })
+        app.get('/my-task', async (req, res) => {
+            const query = { email: req.query.email }
+            res.send(await taskCollection.find(query).toArray())
+        })
+        app.put('/task-done', async (req, res) => {
+            const filter = { _id: ObjectId(req.query.id) }
+            const options = { upsert: true }
+            const updateDoc = {
+                $set: {
+                    complete: "Completed"
+                },
+            };
+            const result = await taskCollection.updateOne(filter, updateDoc, options)
+            res.send(result);
+        })
+        app.delete('/delete-task', async (req, res) => {
+            const query = { _id: ObjectId(req.query.id) }
+            const result = await taskCollection.deleteOne(query)
+            res.send(result)
+        })
     }
     finally {
 
